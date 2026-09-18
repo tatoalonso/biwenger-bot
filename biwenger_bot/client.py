@@ -94,13 +94,18 @@ class BiwengerClient:
         return response.json()["data"]
 
     def full_board(self, page_size=500, max_pages=10):
-        """All board movements, newest first, paginated."""
+        """This season's board movements, newest first, paginated.
+
+        Stops as soon as a page includes the season's leagueReset movement (or runs out
+        of history) -- older seasons aren't needed for any current use of this data, and
+        fetching them made this take ~20s for a league with several years of history.
+        """
         movements = []
         offset = 0
         for _ in range(max_pages):
             page = self.board(offset=offset, limit=page_size)["data"]
             movements.extend(page)
-            if len(page) < page_size:
+            if len(page) < page_size or any(m["type"] == "leagueReset" for m in page):
                 break
             offset += page_size
         return movements
