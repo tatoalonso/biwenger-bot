@@ -12,21 +12,24 @@ alineación y pujas, con criterio propio y datos actualizados.
 Son tres bloques bastante independientes. El scraping es la base: sin
 datos, los otros dos no existen.
 
-### 1. Scraping de la liga
+### 1. Scraping de la liga — ✅ hecho
 
-- Extraer estado de mi liga: plantillas, saldos, movimientos de mercado.
-- Los endpoints de la API de Biwenger no están identificados. Hay que
-  investigarlos desde cero (DevTools del navegador, ver qué llamadas
-  hace la web).
-- Decidir cómo autenticar y cómo persistir los datos entre ejecuciones.
+- API de Biwenger reversada e implementada en `biwenger_bot/client.py`:
+  login, plantilla, liga, mercado, histórico, y acciones de escritura
+  (pujar, vender, alinear — estas últimas sin probar todavía en real).
+- Persistencia entre ejecuciones: todavía no implementada (de momento
+  cada script vuelve a pedir los datos a la API).
 
-### 2. Estimación del dinero de los rivales
+### 2. Estimación del dinero de los rivales — ✅ hecho
 
-- Biwenger no muestra el saldo de los demás.
-- Se deduce a partir del histórico: presupuesto inicial, compras,
-  ventas, primas por puntos.
-- Requiere guardar el histórico de movimientos desde el principio; es
-  un cálculo acumulativo, no una foto puntual.
+- Implementado en `biwenger_bot/money.py`, validado al céntimo contra
+  el saldo real propio (`scripts/money_report.py`).
+- Fórmula: presupuesto inicial del reset de temporada (20M, confirmado
+  por texto de la propia liga) + ventas − compras + primas (jornada,
+  racha diaria) + préstamos netos − subidas de cláusula.
+- Limitación conocida: solo hay verdad-terreno para el equipo propio;
+  un mecanismo de dinero que nadie en la liga haya usado nunca podría
+  pasar desapercibido (ya pasó una vez con los préstamos).
 
 ### 3. Recomendaciones con LLM
 
@@ -37,18 +40,30 @@ datos, los otros dos no existen.
 
 ## Decisiones pendientes
 
-- **Dónde corre**: script local que lanzo a mano, tarea programada, o
-  servicio 24/7. Sin decidir.
+- **Dónde corre**: Raspberry Pi, con ejecución diaria programada
+  (cron). Pendiente de montar.
 - **Vigilancia del mercado**: el mercado rota a diario, así que algo
   tiene que ejecutarse solo si quiero no perderme nada.
 - **Nivel de autonomía**: ¿decide y ejecuta, o solo propone y yo
   confirmo? Empezar por proponer es más seguro.
 
+## Requisitos descubiertos
+
+- **Login diario obligatorio**: Biwenger da 250.000€ de prima por
+  conectarse 5 días seguidos (movimiento `bonus`/`dailyStreak` en el
+  histórico). La ejecución diaria en la Raspberry debe hacer login
+  siempre, aunque ese día no haya ninguna otra acción que tomar, para
+  no romper la racha.
+
 ## Por dónde empezar
 
-Scraping. Concretamente: abrir Biwenger en el navegador con DevTools,
-mirar qué peticiones lanza, y conseguir sacar por consola la lista de
-jugadores de mi plantilla. Ese es el primer hito real.
+Bloques 1 y 2 (scraping y dinero de rivales) hechos. Lo que queda:
+
+- Bloque 3 (recomendaciones con LLM) — sin empezar.
+- Validar en real las acciones de escritura (pujar, vender, alinear)
+  antes de fiarse de ellas.
+- Montar la ejecución diaria en la Raspberry (incluyendo el login
+  diario para no perder la prima por racha).
 
 ## Notas
 

@@ -83,6 +83,28 @@ class BiwengerClient:
         response.raise_for_status()
         return response.json()["data"]["players"]
 
+    def player(self, player_id):
+        """Single player detail, including historical daily prices."""
+        response = requests.get(
+            f"https://cf.biwenger.com/api/v2/players/la-liga/{player_id}",
+            params={"fields": "*,prices", "score": 5, "lang": "es"},
+            headers={"User-Agent": "Mozilla/5.0"},
+        )
+        response.raise_for_status()
+        return response.json()["data"]
+
+    def full_board(self, page_size=500, max_pages=10):
+        """All board movements, newest first, paginated."""
+        movements = []
+        offset = 0
+        for _ in range(max_pages):
+            page = self.board(offset=offset, limit=page_size)["data"]
+            movements.extend(page)
+            if len(page) < page_size:
+                break
+            offset += page_size
+        return movements
+
     def send_to_market(self, price):
         return self._request("POST", "/market", json_body={"type": "team", "price": price})
 
