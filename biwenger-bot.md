@@ -16,7 +16,50 @@ datos, los otros dos no existen.
 
 - API de Biwenger reversada e implementada en `biwenger_bot/client.py`:
   login, plantilla, liga, mercado, histórico, y acciones de escritura
-  (pujar, vender, alinear — estas últimas sin probar todavía en real).
+  (pujar, vender, alinear).
+- Las acciones de escritura se sacaron de un repo de la comunidad de
+  2020 y venían **mal**: `send_to_market()` no mandaba ni el jugador ni
+  el tipo correcto (`"team"` en vez de `"sell"`). Corregido y dividido
+  en `sell_player()` (venta instantánea a precio fijo), `auction_player()`
+  (subasta, otros pujan) y `loan_player()` (cedible a cambio de cuota)
+  — mismo endpoint `POST /market`, solo cambia `type`: `"sell"` /
+  `"auction"` / `"loan"`. Los tres validados con pruebas reales. Hay
+  un tercer botón, "venta inmediata" (ver aviso de peligro más abajo),
+  que no pasa por `POST /market` — es la única de las cuatro acciones
+  del menú de venta que es instantánea e irreversible. En `sell_player()`
+  y `auction_player()` el precio SÍ lo elige el usuario en ambos casos
+  (que en la prueba de subasta coincidiera con el valor de mercado del
+  jugador fue casualidad de dejar el valor sugerido, no un campo
+  bloqueado — corregido tras verificarlo con el usuario).
+  El resto (`place_offer`, `respond_to_offer`,
+  `set_lineup`) sigue sin contrastar contra una acción real — no
+  fiarse hasta comprobarlas una a una igual que esta.
+- **Estructura real de `GET /market`**: tres listas, no una.
+  - `sales`: precio fijo elegido por el vendedor (`type: "sell"`).
+    Tiene ventana de tiempo (`until`) igual que las otras — NO es
+    instantánea, es "el primero que paga ese precio se lo lleva". Lo
+    realmente instantáneo e irreversible es el botón aparte del 50%
+    ya anotado más arriba, que no pasa por aquí.
+  - `auctions`: subastas y cedibles juntos (`type: "auction"` o
+    `"loan"`), precio también elegido por el vendedor — pero aquí sí
+    hay negociación después (pujas u oferta de préstamo) antes de
+    resolverse, a diferencia de `sales` que se cierra al precio pedido.
+  - `offers`: MIS pujas/ofertas activas (no las de todos), con
+    `status` (`"waiting"`, etc.) y `requestedPlayers`.
+  - El campo `loans` que se ve en el JSON siempre sale `null`, no se
+    usa para esto.
+- **Mecánica confirmada por búsqueda web** (guías de la comunidad,
+  no oficial pero consistente con lo que hemos probado):
+  - `sales` (venta directa): caduca a las 48h si nadie la coge.
+  - Subastas: función exclusiva de **ligas Ultra** (la nuestra lo es).
+    Cada puja nueva reinicia una cuenta atrás; si nadie supera la
+    última antes de que expire, se la lleva. Probablemente por eso
+    vimos `"extended": true` en algunas entradas del mercado.
+- **⚠️ Peligro conocido, no implementar sin cuidado extra**: existe un
+  botón de "venta inmediata" en la web, distinto de `sell_player()`,
+  que da solo el 50% del valor del jugador (coincide con
+  `settings.immediateSales: 50` de la liga) y es irreversible. El bot
+  no debe poder disparar esto nunca por accidente.
 - Persistencia entre ejecuciones: todavía no implementada (de momento
   cada script vuelve a pedir los datos a la API).
 

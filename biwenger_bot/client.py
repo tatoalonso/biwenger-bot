@@ -114,8 +114,17 @@ class BiwengerClient:
         """How many bids a player currently on the market has received."""
         return self._request("POST", "/market/bids", json_body={"player": player_id})["data"]
 
-    def send_to_market(self, price):
-        return self._request("POST", "/market", json_body={"type": "team", "price": price})
+    def sell_player(self, player_id, price):
+        """Instant sale at a fixed price."""
+        return self._request("POST", "/market", json_body={"type": "sell", "player": player_id, "price": price})
+
+    def auction_player(self, player_id, price):
+        """List for auction (others can bid) starting at `price`."""
+        return self._request("POST", "/market", json_body={"type": "auction", "player": player_id, "price": price})
+
+    def loan_player(self, player_id, price):
+        """List as loanable (cedible) for a fee."""
+        return self._request("POST", "/market", json_body={"type": "loan", "player": player_id, "price": price})
 
     def place_offer(self, player_id, amount, to=None, offer_type="team"):
         return self._request(
