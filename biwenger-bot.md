@@ -91,6 +91,34 @@ datos, los otros dos no existen.
     si hace falta en el equipo. Se detecta con `priceIncrement` y el
     histórico `prices` (mismo dato que ya usa `money.py`), mirando la
     tendencia de los últimos días.
+- **Alineación: LLM + solver, no solo LLM.** Elegir los 11 que cumplen
+  la formación (ej. 4-3-3) y maximizan puntos es un problema de
+  optimización combinatoria (tipo "mochila") — un LLM no garantiza
+  cumplir las restricciones exactas (podría saltarse la formación o el
+  presupuesto), y probar todas las combinaciones a fuerza bruta se
+  dispara en tiempo si el número de candidatos crece (visto en un TFG
+  real sobre esto mismo — más abajo). Mejor repartir el trabajo:
+  - El LLM estima puntos previstos por jugador (usando lesiones, forma,
+    dificultad del rival — su punto fuerte, juicio con info incompleta).
+  - Un solver de optimización (ej. `pulp` o `ortools` — con nuestros
+    ~15 jugadores de plantilla resuelve en milisegundos, no hace falta
+    nada artesanal) coge esos puntos + las reglas de la liga (formación,
+    presupuesto) y devuelve la combinación óptima garantizada.
+  - Referencia: TFG "Desarrollo de un sistema de soporte a la decisión
+    para juegos de gestión deportiva" (ETSII, A. Cuadrado, 2024, sobre
+    Biwenger) formaliza este mismo problema como programación lineal
+    entera y lo resuelve con backtracking casero (sin solver) — con
+    pocos candidatos va bien, pero se les disparó a más de 1 hora al
+    crecer el número de jugadores; confirma que un solver de verdad es
+    mejor camino que reimplementar la búsqueda a mano. Su sistema de
+    puntuación propio (a partir de estadísticas de partido en bruto) no
+    nos vale — no tenemos esos datos granulares y ya delegamos ese
+    juicio al LLM. Tampoco tienen en cuenta lesiones (usan solo media
+    histórica), algo que nosotros ya resolvemos mejor con
+    `status`/`statusInfo` de la propia API. Código en
+    github.com/cuadantonio/TFG-AI_Assitant (solo la lógica del
+    algoritmo es aprovechable, el resto — MongoDB, app de escritorio —
+    no aplica a nuestro diseño).
 - **Idea: calibrar cuánto pujar con datos reales de la liga.** Cada
   movimiento `market` del histórico trae la puja ganadora y todas las
   perdedoras para ese jugador. Cruzando con el valor del jugador ese
