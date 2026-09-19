@@ -62,6 +62,17 @@ datos, los otros dos no existen.
     dueño previo (no trae `from`), pero se puede inferir: si existe un
     `transfer` emparejado (mismo jugador, fecha cercana, con `from`)
     es que alguien lo vendía; si no hay pareja, era jugador libre.
+    Confirmado que el concepto es real: `GET /market` (listados activos
+    ahora mismo) sí trae `user: null` para jugador libre vs.
+    `user: {id, name}` para el mánager que lo vende — pero eso no sirve
+    para el histórico, `board` no expande `player` aunque se le pida
+    con `fields` (se probó y no funciona), así que ahí toca seguir
+    usando el truco del `transfer` emparejado.
+  - **Dato en vivo útil**: `POST /market/bids` con `{"player": id}`
+    devuelve cuántas pujas tiene ahora mismo un jugador del mercado
+    (`bid_count()` en el cliente). Sirve para ver cuánta competencia
+    hay por un jugador concreto antes de decidir cuánto ofrecer, más
+    allá de la calibración histórica.
 
 ## Persistencia
 

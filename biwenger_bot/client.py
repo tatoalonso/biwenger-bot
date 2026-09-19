@@ -110,6 +110,10 @@ class BiwengerClient:
             offset += page_size
         return movements
 
+    def bid_count(self, player_id):
+        """How many bids a player currently on the market has received."""
+        return self._request("POST", "/market/bids", json_body={"player": player_id})["data"]
+
     def send_to_market(self, price):
         return self._request("POST", "/market", json_body={"type": "team", "price": price})
 
