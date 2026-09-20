@@ -86,11 +86,22 @@ datos, los otros dos no existen.
 - Salida: qué pujar y cuánto, a quién vender, cómo alinear. Los
   fichajes se dividen en dos tipos de recomendación distintos:
   - **Fichaje equipo**: para cubrir una posición débil de la plantilla.
+    Reutiliza las mismas variables que la alineación (`fitness`,
+    `status`, `points`, `difficulty`, `position`) — el LLM estima
+    puntos previstos del candidato igual que para un jugador propio, y
+    se compara contra el más flojo de la plantilla en esa posición.
   - **Fichaje especulación**: jugador con tendencia alcista de valor,
     para comprar y revender a corto plazo por plusvalía, sin importar
-    si hace falta en el equipo. Se detecta con `priceIncrement` y el
-    histórico `prices` (mismo dato que ya usa `money.py`), mirando la
-    tendencia de los últimos días.
+    si hace falta en el equipo. Variables distintas: no puntos, sino
+    `priceIncrement` y el histórico `prices` (mismo dato que ya usa
+    `money.py`), mirando tendencia de precio de los últimos días.
+  - El solver (ver más abajo) no hace falta para fichajes normales —
+    con ~15 candidatos y un movimiento cada vez basta con comparar
+    candidato vs. jugador más débil. Se reserva para la alineación,
+    donde sí hay combinatoria real (11 de 15 con restricciones
+    estrictas). Si algún día se quisiera optimizar varios fichajes a
+    la vez con presupuesto limitado, ahí sí tendría sentido — es el
+    problema completo del TFG citado abajo, con precio incluido.
 - **Alineación: LLM + solver, no solo LLM.** Elegir los 11 que cumplen
   la formación (ej. 4-3-3) y maximizan puntos es un problema de
   optimización combinatoria (tipo "mochila") — un LLM no garantiza
