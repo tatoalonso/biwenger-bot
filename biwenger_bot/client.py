@@ -56,7 +56,7 @@ class BiwengerClient:
         )
 
     def league(self):
-        return self._get("/league", params={"include": "all", "fields": "*,standings,group,settings(description)"})
+        return self._get("/league", params={"include": "all", "fields": "*,standings,group,settings,users"})
 
     def board(self, offset=0, limit=500):
         return self._get(f"/league/{self.league_id}/board", params={"offset": offset, "limit": limit})

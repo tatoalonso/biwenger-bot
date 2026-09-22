@@ -34,9 +34,8 @@ admin la reconfigura.
   proyecto).
 - Privacidad: liga privada, solo amigos invitados.
 - Máximo de participantes: sin límite. Expulsión de inactivos: nunca.
-- Última conexión: visible/oculta para el resto — ⚠️ valor exacto sin
-  confirmar (el texto copiado de la web venía con las dos opciones
-  pegadas, "OcultarMostrar", sin distinguir cuál está activa).
+- Última conexión: **visible** para el resto — confirmado
+  (`showLastAccess: true`).
 
 ### Equipos
 
@@ -84,10 +83,79 @@ admin la reconfigura.
   capitán siempre es el jugador de más puntos previstos si ese supera
   el límite de valor.
 
+### Mercado
+
+- **Jugadores libres simultáneos en el mercado: 10** (`marketSize`).
+  Aclara algo que asumíamos en `biwenger-bot.md` (bloque 3) como "el
+  mercado nunca tiene más de ~15" — ese ~15 que vimos en pruebas
+  reales mezclaba jugadores libres (tope de 10) con jugadores puestos
+  en venta por mánagers de la liga (sin este tope, se suman aparte).
+- Mercado rota **a diario** (`marketSpeed: "daily"`).
+- Venta directa (`sales`) caduca a los **7 días** (`daysForSale: 7`)
+  — corrige el "48 horas" que sacamos antes de una guía web genérica,
+  ver aviso en `biwenger-bot.md`.
+- **`maximumBid: "disabled"`** — la "Puja Máxima" que menciona la
+  regla general de Fichajes (más abajo) parece estar **desactivada**
+  en nuestra liga. No fiarse de un límite de puja máxima automático;
+  el único límite real es el saldo disponible.
+- Ofertas entre usuarios siempre permitidas (`userOffers: "always"`),
+  intercambios de jugadores permitidos (`exchanges: true`).
+- Sin límite de ventas simultáneas por usuario (`marketMaxUserSales: -1`).
+- Subastas: duración base **12h**, incremento mínimo de puja **5%**
+  (`auctionsIncrement: 5`), públicas (`auctionsPublic: true`).
+
+### Cláusulas
+
+- Tipo de cláusula: **"steal"** (el clásico — pagar la cláusula de un
+  jugador de otro mánager te lo lleva directamente).
+- Importe de la cláusula: **200% del valor de mercado** (`clauseRanges:
+  [["inf", 200, "%"]]`) — encaja con lo visto en datos reales (ej.
+  Yamal: precio ~26,1M, cláusula 52,24M = exactamente 2x).
+- Puedes subir tu propia cláusula (`clauseIncrement: 1`), no bajarla
+  (`clauseDecrement: 0`).
+- Retraso de activación tras fichar: **7 días** antes de que otros
+  puedan ejecutar la cláusula de un jugador que acabas de fichar
+  (`clauseActivationDelay`).
+- Cláusulas bloqueadas **48h alrededor de cada jornada**
+  (`clauseRoundDisabledHours: 48`).
+- ⚠️ **Límite por temporada**: puedes ejecutar (robar) cláusulas hasta
+  **27 veces** esta temporada (`clauseExecutedLimit`), y a ti te
+  pueden ejecutar la cláusula hasta **17 veces** (`clauseReceivedLimit`).
+  Relevante si el bot alguna vez recomienda usar cláusulas como
+  estrategia — hay un tope real, no es ilimitado.
+
+### Primas por jornada — de dónde sale el número que ya usamos
+
+`money.py` ya suma correctamente el total `bonus` que da la propia API
+por jornada (validado, diff 0€), sin reconstruirlo a mano. Esto es
+solo para entender de dónde sale ese total, por si hace falta
+desglosarlo en el futuro (ej. para explicarle al usuario el porqué de
+un ingreso, o para el LLM):
+
+- Por punto conseguido: **35.000€** (`bonusPoint`).
+- Fijo por jornada (jugada, con alineación válida): **250.000€**
+  (`bonusFixed`).
+- Alineación ideal de la jornada: **100.000€** (`bonusIdealLineup`).
+- MVP de un partido: **100.000€** (`bonusGameMVP`). MVP de la
+  jornada: **200.000€** (`bonusRoundMVP`).
+- Por gol: **100.000€** (`bonusGoal`). Por portería a cero:
+  **100.000€** (`bonusCleanSheet`) — esto es dinero aparte de los
+  puntos de fantasy que da el gol/portería a cero.
+- Racha diaria (login 5 días seguidos): **250.000€**
+  (`bonusDailyStreak: true`, ya lo teníamos).
+- Alineación más rentable / peor alineación: **desactivadas** en
+  nuestra liga (`bonusProfitableLineup: 0`, `bonusWorstLineup: 0`).
+- ⚠️ Hay también una tabla `bonusRoundPosition` que da bonus por
+  posición en la clasificación DE LA JORNADA (no de la liga), de
+  100.000€ (posición 2) hasta 1.000.000€ (posición 11) — a primera
+  vista parece dar MÁS dinero cuanto PEOR quedas esa jornada, lo cual
+  sería un mecanismo de consuelo para el último. No estoy seguro al
+  100% de esta lectura (podría estar invertida) — pendiente de
+  verificar contra resultados reales antes de asumirlo como cierto.
+
 ### Retos y salarios
 
-- Retos: activados o desactivados — ⚠️ valor exacto sin confirmar
-  (mismo problema de copia, "DesactivadasPermitidas" pegado).
+- Retos: **permitidos** — confirmado (`challengesAllow: true`).
 - Salarios: **desactivado** — confirmado, no cobra salarios de la
   plantilla. No hay hueco pendiente en `money.py` por este motivo.
 

@@ -54,18 +54,25 @@ datos, los otros dos no existen.
     `status` (`"waiting"`, etc.) y `requestedPlayers`.
   - El campo `loans` que se ve en el JSON siempre sale `null`, no se
     usa para esto.
-- **Mecánica confirmada por búsqueda web** (guías de la comunidad,
-  no oficial pero consistente con lo que hemos probado):
-  - `sales` (venta directa): caduca a las 48h si nadie la coge.
-  - Subastas: función exclusiva de **ligas Ultra** (la nuestra lo es).
-    Cada puja nueva reinicia una cuenta atrás; si nadie supera la
-    última antes de que expire, se la lleva. Probablemente por eso
-    vimos `"extended": true` en algunas entradas del mercado.
+- **Mecánica confirmada por búsqueda web** (guías de la comunidad, no
+  oficial): subastas exclusivas de **ligas Ultra** (la nuestra lo es).
+  Cada puja nueva reinicia una cuenta atrás; si nadie supera la última
+  antes de que expire, se la lleva. Probablemente por eso vimos
+  `"extended": true` en algunas entradas del mercado.
+  - ⚠️ **Corregido**: la guía web decía que `sales` caduca a las 48h.
+    Es falso para nuestra liga — el dato real, sacado de
+    `settings.daysForSale` vía API, es **7 días**. Prioridad siempre a
+    los ajustes reales de la API sobre guías genéricas de comunidad.
 - **⚠️ Peligro conocido, no implementar sin cuidado extra**: existe un
   botón de "venta inmediata" en la web, distinto de `sell_player()`,
   que da solo el 50% del valor del jugador (coincide con
   `settings.immediateSales: 50` de la liga) y es irreversible. El bot
   no debe poder disparar esto nunca por accidente.
+- `client.league()` pide ahora `fields=*,standings,group,settings,users`
+  (antes solo `settings(description)`) — trae los 106 campos reales de
+  configuración de la liga de una sola llamada, sin necesidad de ir
+  copiando pantallas de ajustes de la web. Detalle completo en
+  [reglas-biwenger.md](reglas-biwenger.md).
 - Persistencia entre ejecuciones: todavía no implementada (de momento
   cada script vuelve a pedir los datos a la API).
 
