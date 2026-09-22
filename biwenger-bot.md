@@ -2,6 +2,12 @@
 
 Sistema con LLM que juegue por mí en Biwenger (fantasy de fútbol).
 
+Reglas oficiales del juego (no nuestras) en [reglas-biwenger.md](reglas-biwenger.md)
+— pasar como contexto fijo al LLM del bloque 3, y tenerlas presentes
+en cualquier diseño. Incluyen al menos dos restricciones críticas para
+el bot: saldo negativo al empezar jornada = 0 puntos, y -4 por cada
+posición vacía en la alineación.
+
 ## Objetivo
 
 Que el sistema tome o proponga decisiones de juego: fichajes, ventas,
