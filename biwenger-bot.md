@@ -39,7 +39,17 @@ datos, los otros dos no existen.
   bloqueado — corregido tras verificarlo con el usuario).
   `respond_to_offer()` confirmado correcto contra el código fuente real
   de la web (`PUT /offers/{id}` con `{"status": "accepted"/"rejected"}`).
-  `place_offer` sigue sin ninguna validación.
+  ✅ **`place_offer()` validado de verdad (23-09-2026)** — el usuario
+    capturó una puja real con DevTools; nuestra implementación
+    coincidía en todo salvo el `type` por defecto (`"purchase"`, no
+    `"team"` como venía del repo de 2020 — arreglado). Probado con
+    nuestro propio cliente: puja real de 210.000€ sobre un jugador
+    libre → `200 OK` con `id`, `status: "waiting"`. Único requisito
+    encontrado: **en venta a precio fijo (`sales`) la oferta no puede
+    ser inferior al precio listado** (400 "Invalid amount" al
+    intentarlo con menos). **Con esto, las 4 acciones de escritura
+    (mercado, ofertas, alineación) quedan todas validadas contra la
+    cuenta real.**
   - ✅ **`set_lineup()` validado de verdad (23-09-2026)** — guardó una
     alineación real en tu cuenta, confirmado releyéndola después. El
     camino hasta llegar ahí tiene varias lecciones:

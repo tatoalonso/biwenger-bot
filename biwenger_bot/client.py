@@ -139,7 +139,10 @@ class BiwengerClient:
         """List as loanable (cedible) for a fee."""
         return self._request("POST", "/market", json_body={"type": "loan", "player": player_id, "price": price})
 
-    def place_offer(self, player_id, amount, to=None, offer_type="team"):
+    def place_offer(self, player_id, amount, to=None, offer_type="purchase"):
+        """Bid on a market listing. `offer_type` confirmed against a real
+        captured request (2026-09-23): "purchase", not "team" as the old
+        2020-repo code had it -- that default was never right."""
         return self._request(
             "POST",
             "/offers",
