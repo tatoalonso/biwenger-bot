@@ -39,27 +39,51 @@ datos, los otros dos no existen.
   bloqueado — corregido tras verificarlo con el usuario).
   `respond_to_offer()` confirmado correcto contra el código fuente real
   de la web (`PUT /offers/{id}` con `{"status": "accepted"/"rejected"}`).
-  `set_lineup()` **estaba mal** — usaba `PUT /user` genérico; corregido
-  a `PUT /user/{id}/roundLineup` con `{"round": id, "lineup": {...}}`
-  (dato real, sacado del bundle de la web, no adivinado). De paso
-  salieron dos endpoints que no teníamos: `substitute_in_round()` (el
-  cambio único permitido durante la jornada — mismo endpoint, body
-  `{"round", "out", "in", "playingAs"}`) y `fill_lineup()`
-  (`POST /user/{id}/fillLineup`, autocompleta huecos con la sugerencia
-  de Biwenger). `place_offer` sigue sin ninguna validación.
-  - ⚠️ **Primer intento real de `set_lineup()`, sin éxito (23-09-2026)**:
-    probado contra la Jornada 8 (pending) → **500 Internal Server
-    Error** del propio Biwenger, tanto con `captain` incluido en el
-    body como sin él. Causa más probable: `activeEvents` estaba vacío
-    en ese momento — no hay ninguna jornada realmente abierta para
-    recibir alineaciones ahora mismo (la 7 acaba de terminar, la 8
-    aún no se ha abierto, probablemente se abre más cerca del fin de
-    semana). No pudimos confirmar si el body (`{round, lineup:
-    {type, playersID, captain, reservesID}}`) es correcto porque el
-    500 puede estar tapando eso. **Antes de intentar guardar una
-    alineación, comprobar `activeEvents` (o el `status` de la ronda
-    concreta) no vale por sí solo** — hay que reintentar esto cuando
-    haya una jornada de verdad abierta, más cerca del fin de semana.
+  `place_offer` sigue sin ninguna validación.
+  - ✅ **`set_lineup()` validado de verdad (23-09-2026)** — guardó una
+    alineación real en tu cuenta, confirmado releyéndola después. El
+    camino hasta llegar ahí tiene varias lecciones:
+    1. Primer intento, basado en leer el código fuente del bundle sin
+       contrastarlo: usé `PUT /user/{id}/roundLineup` con
+       `{"round", "lineup"}` → **500 Internal Server Error**. Estaba
+       mal interpretado — ese endpoint es para
+       `substitute_in_round()` (el cambio único durante la jornada),
+       no para fijar la alineación completa.
+    2. El usuario capturó con DevTools la petición real que hace la
+       propia web al cambiar la alineación (`Copy as cURL`) — ahí
+       salió el endpoint de verdad: **`PUT /user`** (el genérico, sin
+       ID de equipo en la ruta), body `{"lineup": {"type",
+       "playersID", "reservesID", "captain"}}`, **sin** campo
+       `"round"`. Y `"captain"` es un id plano (`8747`), no
+       `{"id": 8747}` como yo había asumido.
+    3. Con eso, primer 400 limpio (ya no 500): *"Invalid player
+       position 'Portero' para Antonio Blanco"* — **`playersID` tiene
+       que venir ordenado por posición** (portero primero, luego
+       DF/MC/DL), no en el orden que salga del solver. Ahora lo hace
+       `lineup.ordered_player_ids()`.
+    4. Con las reservas (`reservesID`) pasó lo mismo — **son
+       exactamente 4 huecos fijos, uno por posición** (PT/DF/MC/DL,
+       `null` si no se asigna), no "los N mejores suplentes". Y el
+       límite de 2 jugadores por club (`lineupMaxClubPlayers`) cuenta
+       también a las reservas, no solo a los titulares — nuestro
+       solver (`lineup.py`) solo lo comprueba en los 11 titulares,
+       hueco real pendiente de arreglar si algún día se manda
+       `reservesID`.
+    5. **`reservesID` es opcional** — sin él, Biwenger lo rellena solo
+       con 4 `null`. De momento `set_lineup()` no lo manda por
+       defecto, evitando el problema del punto 4 hasta que se arregle
+       el solver.
+    - Endpoints de paso que sí quedan confirmados por el código fuente
+      (no probados en real todavía): `substitute_in_round()` (el
+      cambio único permitido durante la jornada, `PUT
+      /user/{id}/roundLineup` con `{"round", "out", "in",
+      "playingAs"}`) y `fill_lineup()` (`POST /user/{id}/fillLineup`,
+      autocompleta huecos con la sugerencia de Biwenger).
+    - **Lección general**: el código fuente de la web es un buen punto
+      de partida pero no sustituye probar contra la cuenta real o
+      capturar la petición real con DevTools cuando algo falla — aquí
+      llevó a una conclusión (endpoint equivocado) que una petición
+      real capturada por el usuario corrigió en un solo paso.
   - **Cómo se encontró esto**: descargando y grepeando yo mismo el
     bundle real de la web (`cdn.biwenger.com/app/v631/es/app.js`, la
     URL sale del HTML de `biwenger.as.com`) en vez de que el usuario

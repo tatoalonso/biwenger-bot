@@ -22,6 +22,17 @@ FORMATIONS = {
     "5-1-4": {"PT": 1, "DF": 5, "MC": 1, "DL": 4},
 }
 
+# Biwenger's set_lineup (PUT /user) rejects playersID unless it's ordered
+# goalkeeper first, then by position -- sending it in solver-iteration order
+# fails with "Invalid player position" for whoever lands in the wrong slot
+# (confirmed against the real API, 2026-09-23).
+_POSITION_ORDER = {"PT": 0, "DF": 1, "MC": 2, "DL": 3}
+
+
+def ordered_player_ids(starters):
+    """Starter dicts (with a "position" key) -> ids in the order set_lineup() needs."""
+    return [p["id"] for p in sorted(starters, key=lambda p: _POSITION_ORDER[p["position"]])]
+
 
 def optimize_lineup(players, formation, max_per_club=2, captain_max_value=5_000_000):
     """Pick the 11 (+ captain) that maximize predicted points under the league's rules.

@@ -151,18 +151,17 @@ class BiwengerClient:
             "PUT", f"/offers/{offer_id}", json_body={"status": "accepted" if accept else "rejected"}
         )
 
-    def set_lineup(self, round_id, formation, player_ids, captain_id=None, team_id=None):
-        """Set the full lineup for a round. `round_id` from season.rounds (see
-        competition_players()'s parent 'season' object)."""
-        team_id = team_id or self.team_id
+    def set_lineup(self, formation, player_ids, reserve_ids=None, captain_id=None):
+        """Set the full lineup for the upcoming round. Confirmed against a real
+        request captured from the web app (2026-09-23) -- PUT /user, not
+        /user/{id}/roundLineup (that one's for substitute_in_round() below).
+        `captain` is a plain player id, not {"id": ...}."""
         lineup = {"type": formation, "playersID": player_ids}
+        if reserve_ids is not None:
+            lineup["reservesID"] = reserve_ids
         if captain_id is not None:
-            lineup["captain"] = {"id": captain_id}
-        return self._request(
-            "PUT",
-            f"/user/{team_id}/roundLineup",
-            json_body={"round": round_id, "lineup": lineup},
-        )
+            lineup["captain"] = captain_id
+        return self._request("PUT", "/user", params={"fields": "*,lineup(date)"}, json_body={"lineup": lineup})
 
     def substitute_in_round(self, round_id, player_out, player_in, playing_as=None, team_id=None):
         """The single in-round change the league allows -- only with a player
