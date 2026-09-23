@@ -30,12 +30,14 @@ squad_info = [p for p in squad_info if p]
 squad_ids = {p["id"] for p in squad_info}
 
 # solo ventas a precio fijo (sales): el precio de compra es conocido, a diferencia
-# de una subasta donde no sabemos qué puja hará falta para ganarla
+# de una subasta donde no sabemos qué puja hará falta para ganarla.
+# user: null en el listado = jugador libre; user: {...} = lo vende otro mánager
+# (confirmado hace tiempo contra GET /market en vivo).
 candidate_info = []
 for s in market["sales"]:
     info = all_players.get(str(s["player"]["id"])) or all_players.get(s["player"]["id"])
     if info and info["id"] not in squad_ids:
-        candidate_info.append({**info, "market_price": s["price"]})
+        candidate_info.append({**info, "market_price": s["price"], "free_agent": s["user"] is None})
 
 print(f"Plantilla: {len(squad_info)} jugadores. Candidatos en venta directa: {len(candidate_info)}.")
 print("Pidiendo predicción de puntos al LLM para todos a la vez...")
@@ -61,6 +63,7 @@ candidates = [
         "predicted_points": predicted.get(p["id"], {}).get("predicted_points", 0),
         "price": p["market_price"],  # lo que cuesta ficharlo
         "club_id": p["teamID"],
+        "free_agent": p["free_agent"],
     }
     for p in candidate_info
 ]
@@ -82,7 +85,8 @@ else:
     for p in result["sell"]:
         print(f"  VENDER  {p['name']:<20} ({p['position']}, {p['predicted_points']} pts) por {p['price']:,}")
     for p in result["buy"]:
-        print(f"  FICHAR  {p['name']:<20} ({p['position']}, {p['predicted_points']} pts) por {p['price']:,}")
+        origen = "libre" if p["free_agent"] else "de otro mánager"
+        print(f"  FICHAR  {p['name']:<20} ({p['position']}, {p['predicted_points']} pts) por {p['price']:,} -- {origen}")
     print("\nOnce resultante:")
     for p in result["starting_xi"]:
         print(f"  {p['position']}  {p['name']:<20} ({p['predicted_points']} pts)")

@@ -181,6 +181,13 @@ datos, los otros dos no existen.
     Reutiliza las mismas variables que la alineación (`fitness`,
     `status`, `points`, `difficulty`, `position`) — el LLM estima
     puntos previstos del candidato igual que para un jugador propio.
+    ✅ Los candidatos de `transfers_demo.py` ya vienen marcados como
+    libre (`user: null` en `GET /market`) o de otro mánager — se
+    imprime en la recomendación ("-- libre" / "-- de otro mánager").
+    Ambos se consideran válidos para fichaje equipo por igual (a
+    diferencia de especulación, ver abajo); el aviso de riesgo de
+    `place_offer` sin validar aplica más a los de otro mánager, que
+    pueden cancelar el listado.
   - **Fichaje especulación**: jugador con tendencia alcista de valor,
     para comprar y revender a corto plazo por plusvalía, sin importar
     si hace falta en el equipo. Variables distintas: no puntos, sino
