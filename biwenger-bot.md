@@ -37,9 +37,40 @@ datos, los otros dos no existen.
   (que en la prueba de subasta coincidiera con el valor de mercado del
   jugador fue casualidad de dejar el valor sugerido, no un campo
   bloqueado — corregido tras verificarlo con el usuario).
-  El resto (`place_offer`, `respond_to_offer`,
-  `set_lineup`) sigue sin contrastar contra una acción real — no
-  fiarse hasta comprobarlas una a una igual que esta.
+  `respond_to_offer()` confirmado correcto contra el código fuente real
+  de la web (`PUT /offers/{id}` con `{"status": "accepted"/"rejected"}`).
+  `set_lineup()` **estaba mal** — usaba `PUT /user` genérico; corregido
+  a `PUT /user/{id}/roundLineup` con `{"round": id, "lineup": {...}}`
+  (dato real, sacado del bundle de la web, no adivinado). De paso
+  salieron dos endpoints que no teníamos: `substitute_in_round()` (el
+  cambio único permitido durante la jornada — mismo endpoint, body
+  `{"round", "out", "in", "playingAs"}`) y `fill_lineup()`
+  (`POST /user/{id}/fillLineup`, autocompleta huecos con la sugerencia
+  de Biwenger). Ninguno de los tres validado aún contra una acción
+  real — solo contra el código fuente, que es fiable pero no lo mismo
+  que probarlo. `place_offer` sigue igual, sin ninguna validación.
+  - **Cómo se encontró esto**: descargando y grepeando yo mismo el
+    bundle real de la web (`cdn.biwenger.com/app/v631/es/app.js`, la
+    URL sale del HTML de `biwenger.as.com`) en vez de que el usuario
+    fuera pegando trozos de DevTools a mano — mucho más rápido y
+    completo. Filtrar por las funciones que hacen la llamada real
+    (`getPath`/`postPath`/`putPath`/`deletePath`) es clave: buscar
+    rutas sueltas por texto trae ruido (rutas de navegación del
+    frontend tipo `/challenges`, `/messages`, `/team` que no son API).
+  - **Otros endpoints reales encontrados, añadidos al cliente**:
+    `round_league()` (`GET /rounds/league`) — la alineación de **cada
+    rival** en una jornada (formación, capitán, jugadores, puntos), no
+    solo la propia. `home()` (`GET /home`) — liga + tablón de
+    actividad en una sola llamada. `news()` (`GET /news/all`) — feed
+    editorial de Biwenger; parece más contenido tipo blog
+    ("Raphinha, el mejor 9 fantasy") que alertas de lesión por
+    jugador, así que no sustituye la búsqueda web pensada para el
+    bloque 3, pero es una fuente más a tener en cuenta.
+  - Endpoints vistos pero descartados por ahora (monetización,
+    onboarding, notificaciones push, favoritos): `/account/credits*`,
+    `/purchases/*`, `/auth/activate|recover|signup`,
+    `/account/devices`, `/players/favorites*`, `/tools/*`,
+    `/polls/{id}`. No aportan a ningún bloque del proyecto.
   - ⚠️ **Riesgo sin resolver en `transfers.py`**: el solver asume que vas
     a conseguir fichar a los candidatos al precio de la lista (`sales`,
     precio fijo), pero es "el primero que paga se lo lleva" — otro

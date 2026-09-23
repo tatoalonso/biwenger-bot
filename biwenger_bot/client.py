@@ -58,6 +58,19 @@ class BiwengerClient:
     def league(self):
         return self._get("/league", params={"include": "all", "fields": "*,standings,group,settings,users"})
 
+    def round_league(self, round_id=None):
+        """Standings for a round, including every manager's lineup (formation,
+        captain, players, points) -- not just your own."""
+        params = {"round": round_id} if round_id else None
+        return self._get("/rounds/league", params=params)
+
+    def home(self):
+        """Dashboard aggregate: league info + recent board activity in one call."""
+        return self._get("/home")
+
+    def news(self):
+        return self._get("/news/all")
+
     def board(self, offset=0, limit=500):
         return self._get(f"/league/{self.league_id}/board", params={"offset": offset, "limit": limit})
 
@@ -138,7 +151,26 @@ class BiwengerClient:
             "PUT", f"/offers/{offer_id}", json_body={"status": "accepted" if accept else "rejected"}
         )
 
-    def set_lineup(self, formation, player_ids):
+    def set_lineup(self, round_id, formation, player_ids, team_id=None):
+        """Set the full lineup for a round. `round_id` from season.rounds (see
+        competition_players()'s parent 'season' object)."""
+        team_id = team_id or self.team_id
         return self._request(
-            "PUT", "/user", params={"fields": "*"}, json_body={"lineup": {"type": formation, "playersID": player_ids}}
+            "PUT",
+            f"/user/{team_id}/roundLineup",
+            json_body={"round": round_id, "lineup": {"type": formation, "playersID": player_ids}},
         )
+
+    def substitute_in_round(self, round_id, player_out, player_in, playing_as=None, team_id=None):
+        """The single in-round change the league allows -- only with a player
+        who hasn't played yet on either side (lineupRoundChanges: 1)."""
+        team_id = team_id or self.team_id
+        body = {"round": round_id, "out": player_out, "in": player_in}
+        if playing_as is not None:
+            body["playingAs"] = playing_as
+        return self._request("PUT", f"/user/{team_id}/roundLineup", json_body=body)
+
+    def fill_lineup(self, formation=None, team_id=None):
+        """Auto-fill empty lineup slots with Biwenger's own suggestion."""
+        team_id = team_id or self.team_id
+        return self._request("POST", f"/user/{team_id}/fillLineup", json_body={"type": formation})
