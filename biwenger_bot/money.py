@@ -1,4 +1,8 @@
+import json
+import os
 from datetime import datetime
+
+DEFAULT_SNAPSHOT_PATH = "data/rival_cash.jsonl"
 
 # Regla de reparto inicial de la liga: en cada reset ("Nueva temporada" o alta de
 # nuevo miembro) se entrega una plantilla aleatoria (gratis, no sale de este dinero)
@@ -114,3 +118,45 @@ def estimate_cash(team_id, board, since, initial_budget=INITIAL_BUDGET):
         + loan_net_amount(board, team_id, since)
         - clause_increment_amount(board, team_id, since)
     )
+
+
+def record_snapshot(client, board, league, path=DEFAULT_SNAPSHOT_PATH, date=None):
+    """Append today's estimated cash for every team in the league to
+    data/rival_cash.jsonl -- one row per team per day, deduped by (date,
+    team_id) so this is safe to call more than once on the same day (e.g. if
+    the cron runs twice). Shown as context in the Telegram message, not fed
+    to the LLM.
+    """
+    reset = last_reset_date(board) or 0
+    today = date or datetime.now().strftime("%Y-%m-%d")
+
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    seen = set()
+    if os.path.exists(path):
+        with open(path) as f:
+            for line in f:
+                row = json.loads(line)
+                seen.add((row["date"], row["team_id"]))
+
+    new_rows = []
+    for standing in league["standings"]:
+        if (today, standing["id"]) in seen:
+            continue
+        team = client.team(standing["id"])["data"]
+        since = max(reset, team["joinDate"])
+        cash = estimate_cash(standing["id"], board, since)
+        new_rows.append(
+            {
+                "date": today,
+                "team_id": standing["id"],
+                "team_name": standing["name"],
+                "cash": cash,
+                "team_value": standing.get("teamValue", 0),
+            }
+        )
+
+    if new_rows:
+        with open(path, "a") as f:
+            for row in new_rows:
+                f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    return new_rows

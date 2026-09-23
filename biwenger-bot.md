@@ -390,6 +390,19 @@ hace falta levantar ningún servidor/endpoint.
 - **Vigilancia del mercado**: cubierta por el cron de las 10:00 (mira
   el mercado nuevo cada día).
 
+✅ **Script del cron de las 10:00 — hecho y probado de verdad**
+(`scripts/daily_10am.py`). Junta todo lo de arriba (pasos 1-7) en un
+único script: login, `money.record_snapshot()`,
+`bidding.record_market_resolutions()`, plantilla actual, alineación
+óptima, fichajes contra el mercado nuevo, y una recomendación (por
+consola de momento — el bot de Telegram todavía no existe, `notify()`
+es el punto donde engancharlo). Log en `data/recommendations.jsonl`.
+Probado end-to-end contra la cuenta real: ~48s, y el saldo propio
+calculado coincidió exacto con el real (-652.703€) en
+`data/rival_cash.jsonl`, confirmando que todas las piezas encajan.
+Pendiente: el cron de las 6:45 (leer aprobación de Telegram, ajustar
+pujas, ejecutar) — necesita el bot de Telegram primero.
+
 ## Requisitos descubiertos
 
 - **Login diario obligatorio**: Biwenger da 250.000€ de prima por
