@@ -235,8 +235,16 @@ sencillo, pero de momento esto es lo mínimo que funciona.
   (cron). Pendiente de montar.
 - **Vigilancia del mercado**: el mercado rota a diario, así que algo
   tiene que ejecutarse solo si quiero no perderme nada.
-- **Nivel de autonomía**: ¿decide y ejecuta, o solo propone y yo
-  confirmo? Empezar por proponer es más seguro.
+- **Nivel de autonomía — decidido, en dos fases**:
+  1. **Ahora**: bot de Telegram. El cron manda las recomendaciones
+     (alineación, fichajes, pujas) por Telegram y yo las confirmo a
+     mano antes de que se ejecute nada real. Encaja con que las
+     acciones de escritura (`place_offer`, `set_lineup`...) siguen sin
+     validar — no tiene sentido autoejecutar antes de eso de todas
+     formas.
+  2. **A la larga**: autonomía completa, el bot juega solo sin
+     confirmación humana. Pendiente de construir el bot de Telegram
+     (sin empezar) y de decidir cuándo dar el salto a la fase 2.
 
 ## Requisitos descubiertos
 
