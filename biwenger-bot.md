@@ -323,13 +323,24 @@ sencillo, pero de momento esto es lo mínimo que funciona.
   ```json
   {"date": "2026-09-18", "team_id": 14148584, "team_name": "SUCO TEAM", "cash": 1230393, "team_value": 43620000}
   ```
-- **`data/recommendations.jsonl`** — log de lo que recomienda el bot
-  vs. lo que hago yo, para evaluar aciertos con el tiempo y más
-  adelante dárselo de contexto al LLM. El campo `hecho` se rellena
-  después (a mano, o comparando contra el `board` del día siguiente):
-  ```json
-  {"date": "2026-09-18", "type": "fichaje_especulacion", "player_id": 26271, "player_name": "Yamal", "detalle": "tendencia alcista, +8% últimos 5 días", "amount": 27000000, "hecho": null}
-  ```
+- **`data/recommendations.jsonl`** — ✅ hecho, log real de
+  `scripts/daily_10am.py` (formato real, distinto del diseño
+  original): alineación (formación, capitán, titulares/reservas,
+  puntos previstos **por jugador**, no solo el total — hace falta para
+  comparar acierto) + fichajes recomendados + `"executed": false`
+  (pendiente de conectar al Telegram para marcarlo cuando se apruebe).
+- **`data/prediction_accuracy.jsonl`** — ✅ hecho
+  (`biwenger_bot/accuracy.py`, `scripts/check_accuracy.py`). Compara
+  los `predicted_points` guardados en `recommendations.jsonl` contra
+  lo que anotó cada jugador de verdad, y guarda error medio + sesgo
+  por fecha. Usa `fitness[-1]` como el punto real jugado (Biwenger no
+  expone "puntos de esta jornada concreta" por jugador de otra forma;
+  parece coincidir con los totales de temporada al cruzarlo). ⚠️ **Sin
+  validar en real todavía** — escrito durante el parón de selecciones,
+  sin ninguna jornada que haya terminado desde que existe para
+  comprobarlo de verdad. Solo llamar cuando se sepa que la jornada de
+  esa recomendación ya se jugó, o compara contra el resultado
+  equivocado sin avisar.
 - El histórico de movimientos de Biwenger (`board`) NO hace falta
   duplicarlo local — la API ya lo guarda todo sin límite aparente
   (probado hasta 2018). Persistir aquí solo aportaría velocidad, no

@@ -146,6 +146,9 @@ with open(RECOMMENDATIONS_PATH, "a") as f:
                     "starter_ids": [p["id"] for p in lineup_result["starters"]],
                     "reserve_ids": [p["id"] if p else None for p in lineup_result["reserves"]],
                     "total_points": lineup_result["total_points"],
+                    # puntos previstos por jugador, para poder comparar contra lo
+                    # que anote de verdad cuando se juegue la jornada (accuracy.py)
+                    "predicted_points": {p["id"]: p["predicted_points"] for p in lineup_result["starters"]},
                 },
                 "transfers": {
                     "formation": transfer_formation,
