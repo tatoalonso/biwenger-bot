@@ -268,10 +268,6 @@ sencillo, pero de momento esto es lo mínimo que funciona.
 
 ## Decisiones pendientes
 
-- **Dónde corre**: Raspberry Pi, con ejecución diaria programada
-  (cron). Pendiente de montar.
-- **Vigilancia del mercado**: el mercado rota a diario, así que algo
-  tiene que ejecutarse solo si quiero no perderme nada.
 - **Nivel de autonomía — decidido, en dos fases**:
   1. **Ahora**: bot de Telegram. El cron manda las recomendaciones
      (alineación, fichajes, pujas) por Telegram y yo las confirmo a
@@ -280,8 +276,63 @@ sencillo, pero de momento esto es lo mínimo que funciona.
      validar — no tiene sentido autoejecutar antes de eso de todas
      formas.
   2. **A la larga**: autonomía completa, el bot juega solo sin
-     confirmación humana. Pendiente de construir el bot de Telegram
-     (sin empezar) y de decidir cuándo dar el salto a la fase 2.
+     confirmación humana. Pendiente de decidir cuándo dar el salto.
+
+## Flujo del cron — diseño cerrado
+
+**Dónde corre**: Raspberry Pi. **Dato confirmado con la API real**: el
+mercado cierra exactamente a las **7:00** todos los días
+(`until: 1790226000` → 2026-09-24 07:00:00 en un listado real).
+
+**Dos crons, no uno ni dinámico** — gestionar un cron que se dispare
+"X horas antes del próximo evento" es complicado de mantener en un
+crontab normal. Mejor dos horas fijas ancladas al cierre de las 7:00:
+
+```
+CRON A LAS 10:00 (después de que cierre y se resuelva el mercado de las 7:00)
+
+1. Login                                    → prima de racha (obligatorio)
+2. money.py: snapshot caja rivales          → data/rival_cash.jsonl
+                                               (para mostrar en el mensaje
+                                               de Telegram, no como input
+                                               del LLM)
+3. bidding.py: record_market_resolutions()  → data/bid_history.jsonl
+                                               (SIEMPRE, aunque no se use
+                                               todavía -- el histórico de
+                                               precios caduca en ~1 año,
+                                               si no se guarda ahora se
+                                               pierde para siempre)
+4. Traer plantilla actual (ya refleja lo resuelto esta madrugada:
+   fichajes/ventas aprobados ayer que ya se ejecutaron)
+5. lineup.py: recalcular la alineación óptima con la plantilla
+   actualizada → se guarda como referencia
+6. transfers.py + predict.py: con esa misma plantilla + el mercado
+   nuevo ya abierto → recomendaciones de fichaje para hoy
+7. Telegram: recomendaciones + contexto (caja de rivales,
+   required_overbid_pct() si aplica) + log en
+   data/recommendations.jsonl
+
+[El usuario revisa y responde por Telegram qué operaciones aprobar]
+
+CRON A LAS 6:45 (15 min antes del cierre de las 7:00)
+
+8. Leer por Telegram (long polling, no webhook -- ver más abajo) qué
+   se aprobó desde las 10:00
+9. Por cada operación aprobada: bid_count() / competencia real de
+   última hora → ajustar el importe final de la puja
+10. Ejecutar (place_offer, sell_player...) -- requiere validar antes
+    las acciones de escritura contra la cuenta real
+```
+
+**Telegram: long polling, no webhook.** Un webhook necesita una URL
+pública HTTPS (abrir puertos en el router, un túnel, IP fija) --
+complicación innecesaria para un bot personal. Con long polling
+(`getUpdates` de la API de Telegram) el propio cron pregunta "¿hay
+mensajes nuevos?" cuando le interesa, sin exponer nada a internet. No
+hace falta levantar ningún servidor/endpoint.
+
+- **Vigilancia del mercado**: cubierta por el cron de las 10:00 (mira
+  el mercado nuevo cada día).
 
 ## Requisitos descubiertos
 
