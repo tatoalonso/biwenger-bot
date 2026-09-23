@@ -166,26 +166,37 @@ datos, los otros dos no existen.
     github.com/cuadantonio/TFG-AI_Assitant (solo la lógica del
     algoritmo es aprovechable, el resto — MongoDB, app de escritorio —
     no aplica a nuestro diseño).
-- **Idea: calibrar cuánto pujar con datos reales de la liga.** Cada
+- **Calibrar cuánto pujar con datos reales de la liga — ✅ hecho**
+  (`biwenger_bot/bidding.py`, `scripts/record_bids.py`). Cada
   movimiento `market` del histórico trae la puja ganadora y todas las
   perdedoras para ese jugador. Cruzando con el valor del jugador ese
-  día (mismo mecanismo que en `money.py`), se puede calcular qué % de
-  sobreoferta sobre el valor hace falta para ganar una puja con cierta
-  probabilidad (ej. "pujar 20% por encima gana el 90% de las veces") y
-  usar eso para recomendar el importe. Limitado a ~1 año de histórico
-  (lo que cubre el precio diario de cada jugador).
-  - **Ojo**: separar jugador libre vs. jugador puesto en venta por otro
-    mánager — mezclar los dos casos mete ruido, la dinámica de puja
-    puede ser distinta. El propio movimiento `market` no dice si había
-    dueño previo (no trae `from`), pero se puede inferir: si existe un
-    `transfer` emparejado (mismo jugador, fecha cercana, con `from`)
-    es que alguien lo vendía; si no hay pareja, era jugador libre.
-    Confirmado que el concepto es real: `GET /market` (listados activos
-    ahora mismo) sí trae `user: null` para jugador libre vs.
-    `user: {id, name}` para el mánager que lo vende — pero eso no sirve
-    para el histórico, `board` no expande `player` aunque se le pida
-    con `fields` (se probó y no funciona), así que ahí toca seguir
-    usando el truco del `transfer` emparejado.
+  día (mismo mecanismo que en `money.py`) se calcula el % de
+  sobreoferta necesario para ganar, agrupado por nº de pujantes.
+  - **Separación jugador libre vs. no libre, resuelta con datos reales
+    de esta temporada**: los 131 movimientos `market` de este año
+    fueron TODOS de jugadores libres — nadie ha subastado un jugador ya
+    fichado. Los traspasos de jugadores no libres pasan por otra vía,
+    `transfer` con `from` Y `to` a la vez, y casi siempre son
+    `type: "clause"` (pago de cláusula, 200% del valor — dato ya
+    conocido, no hace falta histórico). Los pocos traspasos directos
+    sin cláusula (8 esta temporada) muestran un ratio pagado/valor de
+    ~1,03 a 1,65 (mediana ~1,24) — confirma que no se acepta el valor
+    de mercado tal cual para un jugador ajeno.
+  - **Resultado con datos reales de esta temporada** (mediana, más
+    robusta que la media con pocas muestras): 1 pujante → 0,5%, 2 →
+    5,0%, 3 → 21,7%, 4 → 35,4%, 5+ → ~43%. No coincide exactamente con
+    la hipótesis inicial (20%/40%), pero confirma la tendencia. Con
+    pocas muestras para 4+ pujantes, cae al bidder_count más cercano
+    con datos suficientes (`min_samples`).
+  - **Por qué hay que persistirlo YA, no solo calcularlo al vuelo**: el
+    histórico de precios de cada jugador (`prices`) solo cubre ~1 año.
+    Dentro de un año, las resoluciones de mercado de ahora ya no se
+    podrán recalcular — por eso `record_market_resolutions()` va
+    guardando en `data/bid_history.jsonl` (JSON Lines, sin base de
+    datos, fuera de git) cada vez que se ejecuta, acumulando muestras
+    temporada tras temporada en vez de partir de cero cada vez.
+    `since` por defecto usa el reset de la temporada actual — no hace
+    falta acordarse de pasarlo para no colar temporadas viejas.
   - **Dato en vivo útil**: `POST /market/bids` con `{"player": id}`
     devuelve cuántas pujas tiene ahora mismo un jugador del mercado
     (`bid_count()` en el cliente). Sirve para ver cuánta competencia
