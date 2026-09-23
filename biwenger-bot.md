@@ -197,6 +197,12 @@ datos, los otros dos no existen.
     github.com/cuadantonio/TFG-AI_Assitant (solo la lógica del
     algoritmo es aprovechable, el resto — MongoDB, app de escritorio —
     no aplica a nuestro diseño).
+  - **Red de seguridad**: si por lo que sea el pipeline (LLM + solver)
+    falla o no llega a tiempo antes de que arranque la jornada, usar
+    `client.fill_lineup()` (`POST /user/{id}/fillLineup`, autocompleta
+    huecos con la sugerencia de la propia Biwenger) como último
+    recurso — mejor eso que dejar un hueco vacío y comerse los -4
+    puntos por posición desocupada.
 - **Calibrar cuánto pujar con datos reales de la liga — ✅ hecho**
   (`biwenger_bot/bidding.py`, `scripts/record_bids.py`). Cada
   movimiento `market` del histórico trae la puja ganadora y todas las
