@@ -40,6 +40,15 @@ datos, los otros dos no existen.
   El resto (`place_offer`, `respond_to_offer`,
   `set_lineup`) sigue sin contrastar contra una acción real — no
   fiarse hasta comprobarlas una a una igual que esta.
+  - ⚠️ **Riesgo sin resolver en `transfers.py`**: el solver asume que vas
+    a conseguir fichar a los candidatos al precio de la lista (`sales`,
+    precio fijo), pero es "el primero que paga se lo lleva" — otro
+    mánager puede adelantarse. Y como `place_offer()` no está validado
+    contra la cuenta real, no sabemos cómo falla si llegas tarde (¿error
+    limpio?, ¿reintento?). Antes de automatizar compras de verdad: (1)
+    validar `place_offer()` en real, (2) decidir qué hace el bot si una
+    compra del plan falla a mitad — ¿replantea con lo que queda, o para
+    y avisa?
 - **Estructura real de `GET /market`**: tres listas, no una.
   - `sales`: precio fijo elegido por el vendedor (`type: "sell"`).
     Tiene ventana de tiempo (`until`) igual que las otras — NO es
@@ -101,20 +110,34 @@ datos, los otros dos no existen.
   - **Fichaje equipo**: para cubrir una posición débil de la plantilla.
     Reutiliza las mismas variables que la alineación (`fitness`,
     `status`, `points`, `difficulty`, `position`) — el LLM estima
-    puntos previstos del candidato igual que para un jugador propio, y
-    se compara contra el más flojo de la plantilla en esa posición.
+    puntos previstos del candidato igual que para un jugador propio.
   - **Fichaje especulación**: jugador con tendencia alcista de valor,
     para comprar y revender a corto plazo por plusvalía, sin importar
     si hace falta en el equipo. Variables distintas: no puntos, sino
     `priceIncrement` y el histórico `prices` (mismo dato que ya usa
     `money.py`), mirando tendencia de precio de los últimos días.
-  - El solver (ver más abajo) no hace falta para fichajes normales —
-    con ~15 candidatos y un movimiento cada vez basta con comparar
-    candidato vs. jugador más débil. Se reserva para la alineación,
-    donde sí hay combinatoria real (11 de 15 con restricciones
-    estrictas). Si algún día se quisiera optimizar varios fichajes a
-    la vez con presupuesto limitado, ahí sí tendría sentido — es el
-    problema completo del TFG citado abajo, con precio incluido.
+  - **Por qué no un solo solver conjunto**: puntos de fantasy (plantilla)
+    y euros de plusvalía (especulación) no se pueden sumar en una misma
+    función a maximizar sin inventar una tasa de conversión arbitraria
+    entre las dos unidades — eso rompería la garantía de "sin ambigüedad"
+    que hace bueno a un solver.
+  - **Solución: secuenciar las dos fases, no mezclarlas.**
+    1. **PuLP fase plantilla** (`biwenger_bot/transfers.py`, igual que
+       `lineup.py` pero para fichajes): dado tu plantilla + los ~10-15
+       candidatos del mercado + tu caja, decide qué combinación de
+       ventas (jugadores flojos) + compras (candidatos que suben el
+       total de puntos previstos) maximiza la ganancia neta de puntos,
+       sin superar el presupuesto (caja + lo estimado de las ventas).
+       Esto sustituye a "comparar candidato vs. jugador más débil" —
+       lo generaliza a toda la plantilla y el mercado a la vez, como
+       `best_lineup()` generalizó las formaciones.
+    2. **Ejecutar** esos movimientos reales (`sell_player()`,
+       `place_offer()`, etc.).
+    3. **Releer el saldo real** de la API tras esos movimientos.
+    4. **Especulación con lo que sobre**: ranking simple por tendencia
+       de precio (sin solver), gastando solo la caja libre tras la
+       fase 1 — priorizar mejorar el equipo antes de especular con lo
+       sobrante tiene sentido futbolístico, no solo matemático.
 - **Alineación: LLM + solver, no solo LLM.** Elegir los 11 que cumplen
   la formación (ej. 4-3-3) y maximizan puntos es un problema de
   optimización combinatoria (tipo "mochila") — un LLM no garantiza
