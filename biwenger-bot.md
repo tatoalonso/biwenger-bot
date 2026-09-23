@@ -65,14 +65,18 @@ datos, los otros dos no existen.
        exactamente 4 huecos fijos, uno por posición** (PT/DF/MC/DL,
        `null` si no se asigna), no "los N mejores suplentes". Y el
        límite de 2 jugadores por club (`lineupMaxClubPlayers`) cuenta
-       también a las reservas, no solo a los titulares — nuestro
-       solver (`lineup.py`) solo lo comprueba en los 11 titulares,
-       hueco real pendiente de arreglar si algún día se manda
-       `reservesID`.
+       también a las reservas, no solo a los titulares.
     5. **`reservesID` es opcional** — sin él, Biwenger lo rellena solo
-       con 4 `null`. De momento `set_lineup()` no lo manda por
-       defecto, evitando el problema del punto 4 hasta que se arregle
-       el solver.
+       con 4 `null`.
+    - ✅ **Hueco del límite de club en reservas — arreglado**
+      (`lineup.pick_reserves()`): elige 1 reserva por posición entre
+      quien no sea titular, respetando el límite de 2 por club
+      contando titulares+reservas juntos (no solo mirando reservas por
+      separado). Si no cabe nadie de una posición sin romper el
+      límite, deja ese hueco en `None` en vez de forzarlo. Ya integrado
+      en `optimize_lineup()`/`best_lineup()` — el resultado trae
+      `reserves` además de `starters`. Verificado con la plantilla
+      real: ningún club supera 2 entre titulares y reservas.
     - Endpoints de paso que sí quedan confirmados por el código fuente
       (no probados en real todavía): `substitute_in_round()` (el
       cambio único permitido durante la jornada, `PUT

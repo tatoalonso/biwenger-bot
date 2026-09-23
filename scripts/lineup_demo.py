@@ -55,3 +55,7 @@ print(f"\n=== Mejor formación: {formation} (total previsto: {result['total_poin
 for p in result["starters"]:
     marca = " (C)" if result["captain"] and p["id"] == result["captain"]["id"] else ""
     print(f"  {p['position']}  {p['name']}{marca}  ({p['predicted_points']} pts)")
+
+print("\nReservas (1 por posición, respetando el límite de 2 por club junto a los titulares):")
+for slot, p in zip(["PT", "DF", "MC", "DL"], result["reserves"]):
+    print(f"  {slot}  {p['name'] if p else '(sin asignar)'}")
