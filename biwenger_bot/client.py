@@ -151,14 +151,17 @@ class BiwengerClient:
             "PUT", f"/offers/{offer_id}", json_body={"status": "accepted" if accept else "rejected"}
         )
 
-    def set_lineup(self, round_id, formation, player_ids, team_id=None):
+    def set_lineup(self, round_id, formation, player_ids, captain_id=None, team_id=None):
         """Set the full lineup for a round. `round_id` from season.rounds (see
         competition_players()'s parent 'season' object)."""
         team_id = team_id or self.team_id
+        lineup = {"type": formation, "playersID": player_ids}
+        if captain_id is not None:
+            lineup["captain"] = {"id": captain_id}
         return self._request(
             "PUT",
             f"/user/{team_id}/roundLineup",
-            json_body={"round": round_id, "lineup": {"type": formation, "playersID": player_ids}},
+            json_body={"round": round_id, "lineup": lineup},
         )
 
     def substitute_in_round(self, round_id, player_out, player_in, playing_as=None, team_id=None):

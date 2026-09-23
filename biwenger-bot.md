@@ -46,9 +46,20 @@ datos, los otros dos no existen.
   cambio único permitido durante la jornada — mismo endpoint, body
   `{"round", "out", "in", "playingAs"}`) y `fill_lineup()`
   (`POST /user/{id}/fillLineup`, autocompleta huecos con la sugerencia
-  de Biwenger). Ninguno de los tres validado aún contra una acción
-  real — solo contra el código fuente, que es fiable pero no lo mismo
-  que probarlo. `place_offer` sigue igual, sin ninguna validación.
+  de Biwenger). `place_offer` sigue sin ninguna validación.
+  - ⚠️ **Primer intento real de `set_lineup()`, sin éxito (23-09-2026)**:
+    probado contra la Jornada 8 (pending) → **500 Internal Server
+    Error** del propio Biwenger, tanto con `captain` incluido en el
+    body como sin él. Causa más probable: `activeEvents` estaba vacío
+    en ese momento — no hay ninguna jornada realmente abierta para
+    recibir alineaciones ahora mismo (la 7 acaba de terminar, la 8
+    aún no se ha abierto, probablemente se abre más cerca del fin de
+    semana). No pudimos confirmar si el body (`{round, lineup:
+    {type, playersID, captain, reservesID}}`) es correcto porque el
+    500 puede estar tapando eso. **Antes de intentar guardar una
+    alineación, comprobar `activeEvents` (o el `status` de la ronda
+    concreta) no vale por sí solo** — hay que reintentar esto cuando
+    haya una jornada de verdad abierta, más cerca del fin de semana.
   - **Cómo se encontró esto**: descargando y grepeando yo mismo el
     bundle real de la web (`cdn.biwenger.com/app/v631/es/app.js`, la
     URL sale del HTML de `biwenger.as.com`) en vez de que el usuario
