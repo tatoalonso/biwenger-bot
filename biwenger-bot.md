@@ -191,6 +191,19 @@ datos, los otros dos no existen.
     Reutiliza las mismas variables que la alineación (`fitness`,
     `status`, `points`, `difficulty`, `position`) — el LLM estima
     puntos previstos del candidato igual que para un jugador propio.
+  - ✅ **`difficulty` del próximo rival, conectada de verdad al LLM**
+    (`predict.next_match_difficulty()`). Ojo: NO sale de `activeEvents`
+    (`competition_data()`) — ese campo solo cubre la jornada realmente
+    activa y está vacío el resto del tiempo (ej. durante un parón de
+    selecciones). El dato bueno sale de `client.competition_season()`
+    (`GET /competitions/la-liga/season`), que trae **todo el
+    calendario** — pasado, activo y pendiente — con `difficulty` ya
+    calculado incluso para jornadas que aún no se han jugado.
+    Verificado en real durante el parón actual: `activeEvents` vacío,
+    pero la Jornada 8 (pending) sí traía dificultad completa de sus 9
+    partidos. `predict_points()` ahora acepta `season=` y cada jugador
+    del prompt lleva `next_match: {home, opponent_difficulty}` cuando
+    hay dato disponible (se omite sin más si no lo hay, no falla).
     ✅ Los candidatos de `transfers_demo.py` ya vienen marcados como
     libre (`user: null` en `GET /market`) o de otro mánager — se
     imprime en la recomendación ("-- libre" / "-- de otro mánager").

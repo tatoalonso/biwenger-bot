@@ -22,6 +22,7 @@ client.version = account["version"]
 
 team = client.team()["data"]
 all_players = client.competition_players()
+season = client.competition_season()
 
 squad_info = []
 for p in team["players"]:
@@ -30,7 +31,7 @@ for p in team["players"]:
         squad_info.append(info)
 
 print(f"Pidiendo predicción de puntos al LLM para {len(squad_info)} jugadores...")
-predicted, cost_usd = predict_points(squad_info, repo_root=REPO_ROOT)
+predicted, cost_usd = predict_points(squad_info, repo_root=REPO_ROOT, season=season)
 
 players = [
     {

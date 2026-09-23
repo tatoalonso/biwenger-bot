@@ -86,15 +86,35 @@ class BiwengerClient:
         response.raise_for_status()
         return response.json()
 
-    def competition_players(self):
-        """All La Liga players (id, name, team, position, price, ...) in a single call."""
+    def competition_data(self):
+        """Raw /competitions/la-liga/data response -- players, activeEvents
+        (only the currently-open round, empty otherwise, e.g. during an
+        international break -- use competition_season() for the full
+        calendar instead), season info."""
         response = requests.get(
             "https://cf.biwenger.com/api/v2/competitions/la-liga/data",
             params={"score": 5, "lang": "es"},
             headers={"User-Agent": "Mozilla/5.0"},
         )
         response.raise_for_status()
-        return response.json()["data"]["players"]
+        return response.json()["data"]
+
+    def competition_players(self):
+        """All La Liga players (id, name, team, position, price, ...) in a single call."""
+        return self.competition_data()["players"]
+
+    def competition_season(self):
+        """Full season calendar: every round (past, active, and pending) with
+        its games, each carrying home/away club id + difficulty -- unlike
+        activeEvents, this covers pending rounds too (confirmed against the
+        real API during an international break, when activeEvents was empty
+        but this still had Round 8's fixtures and difficulty)."""
+        response = requests.get(
+            "https://cf.biwenger.com/api/v2/competitions/la-liga/season",
+            headers={"User-Agent": "Mozilla/5.0"},
+        )
+        response.raise_for_status()
+        return response.json()["data"]
 
     def player(self, player_id):
         """Single player detail, including historical daily prices."""

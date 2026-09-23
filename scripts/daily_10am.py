@@ -90,6 +90,7 @@ print("Trayendo plantilla actual...")
 team = client.team()["data"]
 market = client.market()["data"]
 all_players = client.competition_players()
+season = client.competition_season()
 
 squad_info = [all_players.get(str(p["id"])) or all_players.get(p["id"]) for p in team["players"]]
 squad_info = [p for p in squad_info if p]
@@ -102,7 +103,7 @@ for s in market["sales"]:
         candidate_info.append({**info, "market_price": s["price"], "free_agent": s["user"] is None})
 
 print(f"Pidiendo predicción de puntos al LLM para {len(squad_info) + len(candidate_info)} jugadores...")
-predicted, cost_usd = predict_points(squad_info + candidate_info, repo_root=REPO_ROOT)
+predicted, cost_usd = predict_points(squad_info + candidate_info, repo_root=REPO_ROOT, season=season)
 print(f"(coste estimado: ${cost_usd:.4f})")
 
 
